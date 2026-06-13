@@ -1,0 +1,169 @@
+/* ===== newsletter component (tier: @layer lib) =====================================
+   Re-homed from web/css/lib/ (architecture review 2026-06-10): a feature-specific
+   component is OWNED by the module that emits its markup, so its CSS ships only
+   when the module is enabled and a developer edits ONE place. It KEEPS @layer lib
+   (the component tier): identical cascade to the pre-move lib. The variable component tokens
+   are wrapped in @layer lib too, so an unlayered theme :root override still wins
+   exactly as it did when they loaded unlayered-but-first. */
+@layer lib {
+/* Vanilla UI Library: newsletter variables
+   ============================================================================
+   The newsletter subscribe form's variable API (the :root component tokens). The @layer lib
+   rules that consume them live in components/newsletter.css. Magento analog:
+   Magento_Newsletter/web/css/source/_module.less (the .block.newsletter subscribe
+   form: envelope-iconed input fused to the subscribe button, detaching on desktop).
+
+   Unlayered (like every other lib variables file) so a consuming theme's later
+   :root override wins. Where a component token points at a THEME token (the envelope glyph,
+   the small radii, the 220px field cap), it carries a concrete fallback so the
+   component is self-contained in the standalone styleguide (which links only the
+   lib): the theme's tokens.css / generated icons.css supply the real value at
+   runtime, the fallback keeps the form rendering on its own. */
+
+:where(:root) {
+  /* -- envelope glyph at the input's left (blank: @icon-envelope, placeholder
+     colour). The theme generates --icon-envelope from web/icons/envelope.svg; the
+     fallback is that same cropped envelope inline so the styleguide renders it. -- */
+  --newsletter-icon: var(--icon-envelope, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='255 329 514 366'%3E%3Cpath transform='translate(0,960) scale(1,-1)' fill-rule='evenodd' d='M769 594V631H256V606L255 604L256 603V594H257V302H256V293L255 292L256 291V265H769V302V594ZM704 302H316L436 422L410 447L293 330V567L513 350L539 375L538 377L732 571V325L610 447L584 422L704 302ZM317 594H703L512 403L317 594Z'/%3E%3C/svg%3E"));
+  --newsletter-icon-width: 1.8rem; /* 18px (envelope.svg is cropped to the glyph bbox, so center / contain renders at the box ~= blank's ink) */
+  --newsletter-icon-height: 1.3rem; /* 13px */
+  --newsletter-icon-color: var(--form-element-input-placeholder-color, var(--color-gray76)); /* @form-element-input-placeholder__color (#c2c2c2) */
+  --newsletter-icon-inset-inline-start: var(--indent-s); /* 10px */
+
+  /* -- input + button sizing (the input height, its left gutter that clears the
+     envelope, the button's reduced padding that brings it to the input's height) -- */
+  --newsletter-input-height: 3.2rem; /* 32px */
+  --newsletter-input-font-size: var(--form-element-input-font-size); /* 14px: the email input matches the lib forms input[type=email] base */
+  --newsletter-input-padding-inline-start: 3.5rem; /* 35px: clear the envelope glyph (blank input padding-left 35px) */
+  /* (no button padding override: the base button is 32px = the input once
+     --button-primary-line-height is the correct 16px, so the button matches blank.) */
+  --newsletter-button-radius: var(--radius-md, 3px); /* desktop: re-round all corners (blank @action.subscribe border-radius 3px) */
+
+  /* -- desktop field geometry (the 220px capped email field + the 5px gap to the
+     detached button) -- */
+  --newsletter-field-gap: var(--indent-xs); /* 5px (blank .field margin-right 5px) */
+  --newsletter-field-max-width: var(--newsletter-field-max, 22rem); /* 220px (blank .field.newsletter max-width 220px) */
+}
+}
+/* Vanilla UI Library: newsletter
+   ============================================================================
+   Modern-CSS port of blank's Magento_Newsletter/web/css/source/_module.less: the
+   .block.newsletter SUBSCRIBE FORM. Targets the markup Magento emits for the
+   footer newsletter block:
+     .block.newsletter .title          -> the block title (hidden)
+     .block.newsletter .label          -> the field label (visually hidden)
+     .block.newsletter .form.subscribe -> the input + button row
+     .block.newsletter .field.newsletter .control -> carries the envelope glyph
+     .block.newsletter input[type=email] -> the email input
+     .block.newsletter .action.subscribe -> the submit button
+
+   The LESS lays the form out with display:table (.form.subscribe table,
+   .fieldset / .actions table-cell). Reproduced here with modern flexbox (no
+   display:table, no floats): on mobile the input and button are FUSED (a single
+   flex row, the button's inner corners squared off and pulled -1px over the
+   input border); on desktop the field is capped to a fixed width and the button
+   DETACHES (a small gap, all corners re-rounded). The envelope sits on the
+   control's ::before as a masked SVG (the LESS uses the icon font @icon-envelope).
+
+   This component owns only the FORM appearance. The footer PLACEMENT of the block
+   (where it sits in the footer, its margin, desktop order, right-alignment, the
+   block's max-width / width) stays in the theme frame (Magento_Theme module.css /
+   module.desktop.css), not here.
+
+   Override any variable (variables/newsletter.css) to re-skin. */
+
+@layer lib {
+  /* ---- mobile / base: title hidden, label visually hidden, input + button fused ---- */
+  .block.newsletter .title { display: none; }
+
+  /* visually hidden (abs-visually-hidden): the label stays for assistive tech but
+     takes no visual space. */
+  .block.newsletter .label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+  }
+
+  /* the form is a flex row; gap 0 so the input and button fuse on mobile */
+  .block.newsletter .form.subscribe {
+    display: flex;
+    gap: 0;
+  }
+
+  /* the email field grows to fill the row; the button keeps its natural width */
+  .block.newsletter .field.newsletter {
+    flex: 1;
+    margin: 0;
+  }
+
+  /* the control is the positioning context for the envelope glyph */
+  .block.newsletter .field.newsletter .control {
+    position: relative;
+    display: block;
+  }
+
+  /* envelope glyph at the input's left, vertically centred, masked SVG (so the
+     colour is themeable). The input reserves a left gutter for it. envelope.svg is
+     cropped to the glyph bbox, so center / contain renders the envelope at the box
+     size (~18x13px = blank's rendered ink); do NOT change the icon source. */
+  .block.newsletter .field.newsletter .control::before {
+    content: '';
+    position: absolute;
+    inset-inline-start: var(--newsletter-icon-inset-inline-start);
+    inset-block-start: 50%;
+    width: var(--newsletter-icon-width);
+    height: var(--newsletter-icon-height);
+    transform: translateY(-50%);
+    background-color: var(--newsletter-icon-color);
+    -webkit-mask: var(--newsletter-icon) center / contain no-repeat;
+            mask: var(--newsletter-icon) center / contain no-repeat;
+    pointer-events: none;
+  }
+
+  /* blank's distinct #c2c2c2 / 1px-radius input with a left gutter for the envelope */
+  .block.newsletter input[type="email"] {
+    width: 100%;
+    height: var(--newsletter-input-height);
+    box-sizing: border-box;
+    padding-inline-start: var(--newsletter-input-padding-inline-start);
+    border: var(--border-width-base) solid var(--color-gray76);
+    border-radius: var(--radius-input, 1px);
+    font-size: var(--newsletter-input-font-size);
+  }
+
+  .block.newsletter .actions { display: block; }
+
+  /* the subscribe button fused to the input: the squared inner corners and the -1px
+     pull overlap the input's border so they read as one control. The button is already
+     32px (= the input) from blank's base button (7px padding + 16px line-height + 1px
+     border); no newsletter padding override is needed now that --button-primary-line-height
+     is the correct 16px (a stale 20px had made it 36px, the "button too big"). */
+  .block.newsletter .action.subscribe {
+    border-start-start-radius: 0;
+    border-end-start-radius: 0;
+    margin-inline-start: -1px;
+  }
+
+  /* ---- desktop (>= 48em / @screen__m): cap the field, detach the button ---- */
+  @media (min-width: 48em) {
+    /* fixed 220px field + a 5px gap to the button */
+    .block.newsletter .form.subscribe .field.newsletter {
+      flex: 0 0 var(--newsletter-field-max-width);
+      max-width: var(--newsletter-field-max-width);
+      margin-inline-end: var(--newsletter-field-gap);
+    }
+
+    /* detach the button: re-round all corners. Blank KEEPS the -1px pull on
+       desktop (the 5px field gap nets to 4px and the row totals 323.7px); the
+       block is right-aligned, so dropping it shifted the whole row 1px left. */
+    .block.newsletter .action.subscribe {
+      border-radius: var(--newsletter-button-radius);
+    }
+  }
+}
+
